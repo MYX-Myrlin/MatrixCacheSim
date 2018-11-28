@@ -1,2 +1,43 @@
-<h1>Simulator#ThirtyTwo</h1>
-<p>Find me in app/views/simulator/ThirtyTwo.html.erb</p>
+<!--
+  thirtytwo.html.erb
+  Page hosting the 32x32 matrix simulation.
+-->
+<%
+  # Class used for the buttons at the bottom of the page
+  btn_class = "btn btn-success mx-1"
+%>
+<!-- Root Container -->
+<div class="d-flex flex-column h-100">
+  <!-- Title Bar -->
+  <h1 class="bg-primary text-center text-white p-2">
+    32x32 Matrix Simulator
+  </h1>
+  <!-- Matrices -->
+  <div class="d-flex justify-content-around flex-fill m-4">
+    <%= render partial: 'partials/matrix', locals: {
+      name: "Matrix A",
+      id: "matrixA",
+      height: 32,
+      width: 32
+    } %>
+    <%= render partial: 'partials/matrix', locals: {
+      name: "Matrix B",
+      id: "matrixB",
+      height: 32,
+      width: 32
+    } %>
+  </div>
+  <!-- Algorithms -->
+  <div class="d-flex flex-column align-items-stretch mb-4">
+    <h3 class="bg-secondary text-center text-white p-1">
+      Available Algorithms
+    </h3>
+    <!-- Algorithm Buttons -->
+    <div class="d-flex justify-content-center">
+      <button class="<%= btn_class %>">Reset</button>
+      <button class="<%= btn_class %>">Naive</button>
+      <button class="<%= btn_class %>">Naive Blocked</button>
+      <button class="<%= btn_class %>">Deferred Blocked</button>
+    </div>
+  </div>
+</div>

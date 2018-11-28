@@ -1,0 +1,33 @@
+<!--
+  _matrix.html.erb
+  Partial used for rendering a matrix. The matrix will always fill the allotted
+  space given to it.
+
+  locals:
+  :name (String) - Text to display as the name of the matrix
+  :id (String) - ID to prepend to matrix elements IDs
+  :height (Integer) - Height of the matrix
+  :width (Integer) - Width of the matrix
+-->
+<%
+  def gen_id(id, col_index, row_num)
+    return "#{id}x#{col_index}x#{row_num}"
+  end
+%>
+<!-- Root container for the Matrix -->
+<div class="d-flex flex-column flex-fill align-items-stretch
+  border border-thick border-primary p-4 mx-2" id="<%= id %>">
+  <h3 class="bg-secondary p-2 text-center text-white"><%= name %></h3>
+  <% (1..height).each do |y| %>
+    <!-- Row container -->
+    <div class="d-flex flex-fill" id="<%= "#{id}-row#{y}" %>">
+      <% (1..width).each do |x| %>
+        <!-- Matrix element -->
+        <div class="flex-fill border border-primary"
+          id="<%= gen_id(id, x, y) %>">
+          <span>&nbsp;</span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
