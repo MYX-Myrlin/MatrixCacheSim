@@ -9,6 +9,27 @@ integerSize = 4
 
 ###############################################################################
 #
+#   Data Classes
+#
+###############################################################################
+
+# "Struct" used to store matrix data in
+class Matrix
+  # Initializes the matrix's data
+  # @param x Width of the matrix
+  # @param y Height of the matrix
+  # @param address Starting byte address of the matrix
+  # @param elements Array of DOM elements (via JQuery) that belong
+  #   to the matrix. Must be in ascending order from index 0
+  constructor: (@x, @y, @address, @elements) ->
+
+  # Returns the element at the given address in the matrix
+  get: (address) ->
+    index = (address - @address) / integerSize
+    return @elements[index]
+
+###############################################################################
+#
 #   Singleton Classes
 #
 ###############################################################################
@@ -99,6 +120,7 @@ class Model
     # Get a reference to the element to update
     element = matrix.get(address)
     element.removeAttr('style')
+    console.log("Applying action to element " + element)
     # Apply the correct effect to the element
     switch action
       when EAction.Loaded then element.css("background-color", "green")
@@ -114,16 +136,12 @@ class Model
   #   with the specified width of matrix A when calculating the size of
   #   Matrix B.
   @initialize: (matrixX, matrixY, matrixAAddress, matrixBAddress) ->
-    # Store the size & address of each matrix
-    @matrixA.x = matrixX
-    @matrixA.y = matrixY
-    @matrixA.address = matrixAAddress
-    @matrixB.x = @matrixA.x
-    @matrixB.y = @matrixA.y
-    @matrixB.address = matrixBAddress
+    # Construct each matrix
+    @matrixA = new Matrix(matrixX, matrixY, matrixAAddress, [])
+    @matrixB = new Matrix(matrixY, matrixX, matrixBAddress, [])
     # Load each matrix's elements
-    loadElements(@matrixA.elements, $("#matrixA"))
-    loadElements(@matrixB.elements, $("#matrixB"))
+    @loadElements(@matrixA.elements, $("#matrixA"))
+    @loadElements(@matrixB.elements, $("#matrixB"))
     return
 
   # Loads the elements in the matrices into the arrays
@@ -168,17 +186,18 @@ class Simulator
   #   effects
   @simulate: ->
     # Executes an action
-    run = (index) ->
+    run = (index) =>
       @data[index].run()
       setTimeout((() -> finish(index)), @delay)
       return
     # Completes an action
-    finish = (index) ->
+    finish = (index) =>
       @data[index].finish()
       # If additional elements remain, call `run()` on the next element
-      if (index + 1 == @data.length)
+      if index + 1 < @data.length
         setTimeout((() -> run(index + 1)), @delay)
       return
+    setTimeout((() => run(0)), @delay)
 
 ###############################################################################
 #
@@ -206,27 +225,6 @@ class EMatrix
 
 ###############################################################################
 #
-#   Data Classes
-#
-###############################################################################
-
-# "Struct" used to store matrix data in
-class Matrix
-  # Initializes the matrix's data
-  # @param x Width of the matrix
-  # @param y Height of the matrix
-  # @param address Starting byte address of the matrix
-  # @param elements Array of DOM elements (via JQuery) that belong
-  #   to the matrix. Must be in ascending order from index 0
-  constructor: (@x, @y, @address, @elements) ->
-
-  # Returns the element at the given address in the matrix
-  get: (address) ->
-    index = (address - @address) / integerSize
-    return @elements[index]
-
-###############################################################################
-#
 #   Action Classes
 #
 ###############################################################################
@@ -234,7 +232,7 @@ class Matrix
 # Class used to represent an action
 class Action
   # Takes an address and calculates the matrix that the action applied to
-  constructor(@address) ->
+  constructor: (@address) ->
     # If the address is before the first byte of matrix B, the address belongs
     #   to matrix A
     @matrix = if (@address < Model.matrixB.address) then EMatrix.MatrixA else EMatrix.MatrixB
@@ -248,6 +246,7 @@ class Action
 class AccessElement extends Action
   constructor: (address) ->
     super(address)
+    console.log(this)
   run: ->
     Model.applyAction(EAction.Accessed, @matrix, @address)
     return
@@ -263,6 +262,7 @@ class LineLoad extends Action
   # @param count Number of elements in the line
   constructor: (address, @count) ->
     super(address)
+    console.log(this)
   run: ->
     for offset in [0...@count * integerSize] by integerSize
       Model.applyAction(EAction.Loaded, @matrix, @address + offset)
@@ -276,6 +276,7 @@ class LineEviction extends Action
   # @param count Number of elements in the line
   constructor: (address, @count) ->
     super(address)
+    console.log(this)
   run: ->
     for offset in [0...@count * integerSize] by integerSize
       Model.applyAction(EAction.Evicted, @matrix, @address + offset)
@@ -329,7 +330,7 @@ class CacheLine
   # Invalidates the cache line
   invalidate: () ->
     # Log the eviction
-    Simulator.logAction(new LineEviction(address, data.length))
+    Simulator.logAction(new LineEviction(@address, @data.length))
     # Clear the cache line's data
     @address = 0
     @data = []
@@ -362,7 +363,7 @@ class CacheLine
     @size = @data.length * integerSize
     @valid = true
     # Log the load
-    Simulator.logAction(new LineLoad(address, data.length))
+    Simulator.logAction(new LineLoad(@address, @data.length))
     return
 
   # Sets the value of an integer. The address passed to this function
@@ -393,7 +394,7 @@ class CacheSet
   # Returns the value at the given address
   get: (address) ->
     # Locate the block with the address
-    for block in blocks
+    for block in @blocks
       # If the block is invalid, ignore it
       if !block.isValid()
         continue
@@ -405,8 +406,9 @@ class CacheSet
 
   # Checks whether the address is present in the set
   inSet: (address) ->
+    console.log(@blocks)
     # Check whether the address is in any block in the set
-    for block in blocks
+    for block in @blocks
       # If the block is invalid, ignore it
       if !block.isValid()
         continue
@@ -426,7 +428,7 @@ class CacheSet
     # (in case the set is full and a line needs to be evicted)
 
     # Tracks the least recently used cache
-    lruCache = blocks[0]
+    lruCache = @blocks[0]
     for block in @blocks
       # Check whether the current block can be used for the cache
       # line
@@ -480,6 +482,9 @@ class Cache
     # Mask for getting the set that an address is in
     @setMask = ~0 << @indexBits
     @setMask = ~@setMask << @offsetBits
+    # Initialize the sets
+    for [0...@setCount]
+      @sets.push(new CacheSet(@associativity))
 
   # Calculates the index of the set that the address belongs to
   calcSet: (address) ->
@@ -491,7 +496,7 @@ class Cache
   # @param address Address to load. May be any integer.
   get: (address) ->
     # Get the set that the address should be in
-    setIndex = calcSet(address)
+    setIndex = @calcSet(address)
     # If the address is not loaded, load it
     if !@sets[setIndex].inSet(address)
       # Get the data from memory
@@ -507,11 +512,11 @@ class Cache
   # @param value Value to set the integer to.
   set: (address, value) ->
     # Get the set that the address should be in
-    setIndex = calcSet(address)
+    setIndex = @calcSet(address)
     # If the address is not loaded, load it
     if !@sets[setIndex].inSet(address)
       # Get the data from memory
-      data = Memory.getLine(address)
+      data = Memory.getLine(address, @blockSize)
       # Add the data to the correct set
       @sets[setIndex].load(address, data)
     # Set the value
@@ -524,7 +529,17 @@ class Cache
 #
 ###############################################################################
 
+naive = ->
+  console.log("Naive")
+  return
 
+naiveBlocked = ->
+  console.log("Naive-blocked")
+  return
+
+deferredBlocked = ->
+  console.log("Deferred blocked")
+  return
 
 ###############################################################################
 #
@@ -532,10 +547,45 @@ class Cache
 #
 ###############################################################################
 
+reset = ->
+  Model.reset()
+  Simulator.clear()
+  return
 
+# Reset button event handler
+$("#reset-btn").click(reset)
+
+# Naive algorithm event handler
+$("#naive-btn").click ->
+  reset()
+  naive()
+  return
+
+# Naive algorithm event handler
+$("#naive-blocked-btn").click ->
+  reset()
+  naiveBlocked()
+  return
+
+# Naive algorithm event handler
+$("#deferred-blocked-btn").click ->
+  reset()
+  deferredBlocked()
+  return
 
 ###############################################################################
 #
 #   Initialization
 #
 ###############################################################################
+
+$ ->
+  matrixAAddress = Memory.alloc(32 * 32)
+  matrixBAddress = Memory.alloc(32 * 32)
+  Model.initialize(32, 32, matrixAAddress, matrixBAddress)
+  cache = new Cache(1024, 1, 32)
+  cache.get(0)
+  cache.get(32)
+  cache.get(0)
+  console.log("Simulating...");
+  Simulator.simulate()
