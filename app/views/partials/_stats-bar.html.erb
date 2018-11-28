@@ -1,0 +1,38 @@
+<!--
+  _stats-bar.html.erb
+  Displays a panel used for displaying cache statistics.
+-->
+<div class="d-flex flex-column align-items-stretch bg-secondary
+  text-white text-center p-2">
+  <h1>Algorithm Statistics</h1>
+  <!-- Cache Hits -->
+  <div>
+    <span>Cache Hits: </span>
+    <span id="cache-hits">0</span>
+  </div>
+  <!-- Cache Misses -->
+  <div>
+    <span>Cache Misses: </span>
+    <span id="cache-misses">0</span>
+  </div>
+  <!-- Cache Loads -->
+  <div>
+    <span>Cache Loads: </span>
+    <span id="cache-loads">0</span>
+  </div>
+  <!-- Cache Evictions -->
+  <div>
+    <span>Cache Evictions: </span>
+    <span id="cache-evictions">0</span>
+  </div>
+  <!-- Cache Usage -->
+  <div>
+    <span>Cache Usage: </span>
+    <span id="cache-usage">0</span>
+    <span>/</span>
+    <span id="cache-size">0</span>
+    <span>(</span>
+    <span id="cache-percentage">0</span>
+    <span>%)</span>
+  </div>
+</div>
