@@ -23,8 +23,23 @@ class Matrix
   #   to the matrix. Must be in ascending order from index 0
   constructor: (@x, @y, @address, @elements) ->
 
-  # Returns the element at the given address in the matrix
-  get: (address) ->
+  # Returns the value at the given position
+  # This function will load the address into the cache if it is not already
+  #   in the cache.
+  get: (x, y) ->
+    offset = y * @x + x
+    return Cache.get(@address + (offset * integerSize))
+
+  # Writes the value to the given position
+  # This function will load the address into the cache if it is not already
+  #   in the cache.
+  set: (x, y, value) ->
+    offset = y * @x + x
+    Cache.set(@address + (offset * integerSize), value)
+    return
+
+  # Returns the DOM element at the given address in the matrix
+  getDOMElement: (address) ->
     index = (address - @address) / integerSize
     return @elements[index]
 
@@ -33,6 +48,97 @@ class Matrix
 #   Singleton Classes
 #
 ###############################################################################
+
+# Class used to simulate a cache
+class Cache
+  # Array of CacheSet objects
+  @sets: []
+  # Associativity of the cache
+  @associativity: 0
+  # Block size of the cache, in bytes
+  @blockSize: 0
+  # Number of total cache lines in the cache
+  @cacheLineCount: 0
+  # Size of the cache in bytes
+  @cacheSize: 0
+  # Number of bits used for the index part of an address
+  @indexBits: 0
+  # Number of bits used for the offset part of the address
+  @offsetBits: 0
+  # Number of sets in the cache
+  @setCount: 0
+  # Mask used to retrieve only the set index bits
+  @setMask: 0
+  # Constructs the cache
+  # @param cacheSize Specifies the overall size of the cache, in bytes
+  # @param associativity Specifies the associativity of the cache
+  # @param blockSize Specifies the block size of the cache, in bytes
+  @initialize: (cacheSize, associativity, blockSize) ->
+    @cacheSize = cacheSize
+    @associativity = associativity
+    @blockSize = blockSize
+    # Number of offset bits
+    @offsetBits = Math.log2(@blockSize)
+    # Number of cache lines in the cache
+    @cacheLineCount = @cacheSize / @blockSize
+    # Number of sets in the cache
+    @setCount = @cacheLineCount / @associativity
+    # Number of index bits
+    @indexBits = Math.log2(@setCount)
+    # Mask for getting the set that an address is in
+    @setMask = ~0 << @indexBits
+    @setMask = ~@setMask << @offsetBits
+    # Initialize the sets
+    for [0...@setCount]
+      @sets.push(new CacheSet(@associativity))
+
+  # Calculates the index of the set that the address belongs to
+  @calcSet: (address) =>
+    return (address & @setMask) >> @offsetBits
+
+  # Clears all data from the cache
+  @flush: =>
+    @sets = []
+    @initialize(@cacheSize, @associativity, @blockSize)
+
+  # Gets the value at the given address. This function will load a cache
+  #   line into the cache if the address is not already located in the
+  #   cache.
+  # @param address Address to load. May be any integer.
+  @get: (address) =>
+    # Get the set that the address should be in
+    setIndex = @calcSet(address)
+    # If the address is not loaded, load it
+    if !@sets[setIndex].inSet(address)
+      # Get the data from memory
+      data = Memory.getLine(address, @blockSize)
+      # Calculate the address of the first byte of the returned cache line
+      startAddress = 
+        Memory.calcCacheAlignmentBoundary(address, @blockSize)
+      # Add the data to the correct set
+      @sets[setIndex].load(startAddress, data)
+    # Return the data at the given element
+    return @sets[setIndex].get(address)
+
+  # Sets an integer to a specific value. If the address is not in cache,
+  #   the cache line containing the address will be loaded into the cache.
+  # @param address Address of the integer. Must be a multiple of 4.
+  # @param value Value to set the integer to.
+  @set: (address, value) =>
+    # Get the set that the address should be in
+    setIndex = @calcSet(address)
+    # If the address is not loaded, load it
+    if !@sets[setIndex].inSet(address)
+      # Get the data from memory
+      data = Memory.getLine(address, @blockSize)
+      # Calculate the address of the first byte of the returned cache line
+      startAddress = 
+        Memory.calcCacheAlignmentBoundary(address, @blockSize)
+      # Add the data to the correct set
+      @sets[setIndex].load(startAddress, data)
+    # Set the value
+    @sets[setIndex].set(address, value)
+    return
 
 # Class used to track the current simulation time. This class assumes that
 #   any calls to getTime() are for storing the time, and therefore increments
@@ -43,7 +149,7 @@ class Clock
   @time: 0
   constructor: ->
   # Returns the current time and increments it
-  @getTime: () ->
+  @getTime: () =>
     @time += 1
 
 # Class used to simulate main memory
@@ -54,7 +160,7 @@ class Memory
 
   # Allocates space for `size` integers. Will be aligned at a 16-byte boundary.
   # @returns This function returns the address of the first integer.
-  @alloc: (size) ->
+  @alloc: (size) =>
     # Check if padding is necessary
     if @data.length % integerSize != 0
       # Calculate how many integers need to be added to the array
@@ -69,12 +175,20 @@ class Memory
     # Calculate the address that will be returned
     returnAddress = @data.length * integerSize
     # Add the array to the data array
-    @data.concat(array)
+    @data = @data.concat(array)
     return returnAddress
+
+  # Calculates the address of the first alignment boundary before the
+  #   specified address.
+  # @param address Address to calculate the alignment boundary
+  # @param cacheLineSize Size, in bytes, of a cache line. Determines
+  #   where alignment boundaries are.
+  @calcCacheAlignmentBoundary: (address, cacheLineSize) ->
+    return Math.floor(address / cacheLineSize) * cacheLineSize
 
   # Returns the value of a given integer
   # @param address Address of the integer. Must be a multiple of 4.
-  @get: (address) ->
+  @get: (address) =>
     # Calculate the index of the integer
     index = address / integerSize
     return @data[index]
@@ -83,7 +197,7 @@ class Memory
   # @param address Address of the requested integer. Must be a multiple
   #   of 4.
   # @param lineSize Size, in bytes, of the cache line to retrieve
-  @getLine: (address, lineSize) ->
+  @getLine: (address, lineSize) =>
     # Calculate the number of elements to return
     elementCount = lineSize / integerSize
     # Calculate the array index of the requested element
@@ -96,7 +210,7 @@ class Memory
   # Sets an integer to a specific value
   # @param address Address of the integer. Must be a multiple of 4.
   # @param value Value to set the integer to.
-  @set: (address, value) ->
+  @set: (address, value) =>
     # Calculate the index of the integer
     index = address / integerSize
     @data[index] = value
@@ -114,18 +228,17 @@ class Model
   #   use.
   # @param matrixID EMatrix value. Specifies the matrix to apply the effect to.
   # @param address Byte address of the element to apply the effect to
-  @applyAction: (action, matrixID, address) ->
+  @applyAction: (action, matrixID, address) =>
     # Get a reference to the matrix
-    matrix = (matrixID == EMatrix.MatrixA) ? matrixA : matrixB
+    matrix = if matrixID == EMatrix.MatrixA then @matrixA else @matrixB
     # Get a reference to the element to update
-    element = matrix.get(address)
+    element = matrix.getDOMElement(address)
     element.removeAttr('style')
-    console.log("Applying action to element " + element)
     # Apply the correct effect to the element
     switch action
       when EAction.Loaded then element.css("background-color", "green")
       when EAction.Accessed then element.css("background-color", "black")
-      when EAction.Unloaded then element.css("background-color", "red")
+      when EAction.Evicted then element.css("background-color", "red")
     return
 
   # Searches for and adds references to the elements in each matrix
@@ -135,34 +248,25 @@ class Model
   # @param matrixY Specifies the height of matrix A. This value will be swapped
   #   with the specified width of matrix A when calculating the size of
   #   Matrix B.
-  @initialize: (matrixX, matrixY, matrixAAddress, matrixBAddress) ->
+  @initialize: (matrixX, matrixY, matrixAAddress, matrixBAddress) =>
     # Construct each matrix
     @matrixA = new Matrix(matrixX, matrixY, matrixAAddress, [])
     @matrixB = new Matrix(matrixY, matrixX, matrixBAddress, [])
     # Load each matrix's elements
-    @loadElements(@matrixA.elements, $("#matrixA"))
-    @loadElements(@matrixB.elements, $("#matrixB"))
+    matrixAElements = $(".matrixA-element")
+    for index in [0..matrixAElements.length]
+      @matrixA.elements.push(matrixAElements.eq(index))
+
+    matrixBElements = $(".matrixB-element")
+    for index in [0..matrixBElements.length]
+      @matrixB.elements.push(matrixBElements.eq(index))
     return
 
-  # Loads the elements in the matrices into the arrays
-  @loadElements: (matrixArray, matrix) ->
-    # Process each row
-    for row in matrix.children(".div")
-      @processRow(matrixArray, row)
-    return
-
-  # Loads all elements in the row to the matrix's array
-  @processRow: (matrixArray, row) ->
-    # Get all children of the row
-    for element in row.children()
-      matrixArray.push(element)
-    return
-
-  @reset: ->
+  @reset: =>
     # Remove any styles that have been applied via the Model class
-    for element in matrixAElements
+    for element in @matrixA.elements
       element.removeAttr('style')
-    for element in matrixBElements
+    for element in @matrixB.elements
       element.removeAttr('style')
     return
 
@@ -171,20 +275,20 @@ class Simulator
   # Array of actions to replay on the simulation page
   @data: []
   # Delay between updates, in milliseconds
-  @delay: 250
+  @delay: 50
 
   # Clears all saved actions
-  @clear: ->
+  @clear: =>
     @data = []
 
   # Adds an action to the simulation log
   # @param action Action object to store
-  @logAction: (action) ->
+  @logAction: (action) =>
     @data.push(action)
 
   # Runs through all saved actions and updates the simulation with their
   #   effects
-  @simulate: ->
+  @simulate: =>
     # Executes an action
     run = (index) =>
       @data[index].run()
@@ -238,19 +342,18 @@ class Action
     @matrix = if (@address < Model.matrixB.address) then EMatrix.MatrixA else EMatrix.MatrixB
   # Function to be overloaded by child classes. Applies the action to the
   #   simulation page elements
-  run: ->
+  run: =>
   # Function to be overloaded by child classes. Called to "complete" the
   #   action.
-  finish: ->
+  finish: =>
 
 class AccessElement extends Action
   constructor: (address) ->
     super(address)
-    console.log(this)
-  run: ->
+  run: =>
     Model.applyAction(EAction.Accessed, @matrix, @address)
     return
-  finish: ->
+  finish: =>
     Model.applyAction(EAction.Loaded, @matrix, @address)
     return
 
@@ -262,12 +365,11 @@ class LineLoad extends Action
   # @param count Number of elements in the line
   constructor: (address, @count) ->
     super(address)
-    console.log(this)
-  run: ->
+  run: =>
     for offset in [0...@count * integerSize] by integerSize
       Model.applyAction(EAction.Loaded, @matrix, @address + offset)
     return
-  finish: ->
+  finish: =>
     # Nothing to do
 
 class LineEviction extends Action
@@ -276,13 +378,14 @@ class LineEviction extends Action
   # @param count Number of elements in the line
   constructor: (address, @count) ->
     super(address)
-    console.log(this)
-  run: ->
+  run: =>
     for offset in [0...@count * integerSize] by integerSize
       Model.applyAction(EAction.Evicted, @matrix, @address + offset)
     return
-  finish: ->
-    # Nothing to do
+  finish: =>
+    for offset in [0...@count * integerSize] by integerSize
+      Model.applyAction(EAction.Clear, @matrix, @address + offset)
+    return
 
 ###############################################################################
 #
@@ -314,7 +417,7 @@ class CacheLine
   # Returns the value of the integer at the given address.
   # @param address Address to retrieve the integer from. Must
   #   be a multiple of four.
-  get: (address) ->
+  get: (address) =>
     # Update the last accessed time
     @lastUsed = Clock.getTime()
     # Calculate the offset required to fetch the element
@@ -324,11 +427,11 @@ class CacheLine
     return @data[offset]
 
   # Checks whether the cache line is valid
-  isValid: () ->
+  isValid: () =>
     return @valid
 
   # Invalidates the cache line
-  invalidate: () ->
+  invalidate: () =>
     # Log the eviction
     Simulator.logAction(new LineEviction(@address, @data.length))
     # Clear the cache line's data
@@ -343,7 +446,7 @@ class CacheLine
   #   line. Returns false if the address is not located within
   #   the cache line.
   # @param address Address to check. Should be an integer.
-  inLine: (address) ->
+  inLine: (address) =>
     # For an address to be in the cache line, the line must be valid
     # and the address must be in the range of addresses held by the
     # cache line
@@ -352,7 +455,7 @@ class CacheLine
   # Loads the data into the cache line
   # @param address Address of the first byte of the cache line
   # @param data Array of integers representing the cache line
-  load: (address, data) ->
+  load: (address, data) =>
     @address = address
     @data = data
     # Update the time the cache line was used
@@ -369,7 +472,7 @@ class CacheLine
   # Sets the value of an integer. The address passed to this function
   #   must be a multiple of 4 and must be an address located within
   #   this cache line.
-  set: (address, value) ->
+  set: (address, value) =>
     # Update the last accessed time
     @lastUsed = Clock.getTime()
     # Calculate the offset required to fetch the element
@@ -392,7 +495,7 @@ class CacheSet
       @blocks.push(new CacheLine())
 
   # Returns the value at the given address
-  get: (address) ->
+  get: (address) =>
     # Locate the block with the address
     for block in @blocks
       # If the block is invalid, ignore it
@@ -405,8 +508,7 @@ class CacheSet
     return null
 
   # Checks whether the address is present in the set
-  inSet: (address) ->
-    console.log(@blocks)
+  inSet: (address) =>
     # Check whether the address is in any block in the set
     for block in @blocks
       # If the block is invalid, ignore it
@@ -421,7 +523,7 @@ class CacheSet
 
   # Loads a new cache line into the set, evicting a cache line
   #   if necessary
-  load: (address, data) ->
+  load: (address, data) =>
     # Iterate over all loaded blocks and search for an invalid
     # cache line (in case a slot is available). Also track the
     # lowest last used time for all caches currently in the cache
@@ -450,9 +552,9 @@ class CacheSet
   # @param address Address of the integer to set. This address must be
   #   a multiple of 4 and must be an address located within this cache set.
   # @param value Value to set the integer to.
-  set: (address, value) ->
+  set: (address, value) =>
     # Locate the block with the address
-    for block in blocks
+    for block in @blocks
       # If the block is invalid, ignore it
       if !block.isValid()
         continue
@@ -462,82 +564,24 @@ class CacheSet
         return
     return
 
-# Class used to simulate a cache
-class Cache
-  # Constructs the cache
-  # @param cacheSize Specifies the overall size of the cache, in bytes
-  # @param associativity Specifies the associativity of the cache
-  # @param blockSize Specifies the block size of the cache, in bytes
-  constructor: (@cacheSize, @associativity, @blockSize) ->
-    # Tracks the sets in the cache
-    @sets = []
-    # Number of offset bits
-    @offsetBits = Math.log2(@blockSize)
-    # Number of cache lines in the cache
-    @cacheLineCount = @cacheSize / @blockSize
-    # Number of sets in the cache
-    @setCount = @cacheLineCount / @associativity
-    # Number of index bits
-    @indexBits = Math.log2(@setCount)
-    # Mask for getting the set that an address is in
-    @setMask = ~0 << @indexBits
-    @setMask = ~@setMask << @offsetBits
-    # Initialize the sets
-    for [0...@setCount]
-      @sets.push(new CacheSet(@associativity))
-
-  # Calculates the index of the set that the address belongs to
-  calcSet: (address) ->
-    return (address & @setMask) >> @offsetBits
-
-  # Gets the value at the given address. This function will load a cache
-  #   line into the cache if the address is not already located in the
-  #   cache.
-  # @param address Address to load. May be any integer.
-  get: (address) ->
-    # Get the set that the address should be in
-    setIndex = @calcSet(address)
-    # If the address is not loaded, load it
-    if !@sets[setIndex].inSet(address)
-      # Get the data from memory
-      data = Memory.getLine(address)
-      # Add the data to the correct set
-      @sets[setIndex].load(address, data)
-    # Return the data at the given element
-    return @sets[setIndex].get(address)
-
-  # Sets an integer to a specific value. If the address is not in cache,
-  #   the cache line containing the address will be loaded into the cache.
-  # @param address Address of the integer. Must be a multiple of 4.
-  # @param value Value to set the integer to.
-  set: (address, value) ->
-    # Get the set that the address should be in
-    setIndex = @calcSet(address)
-    # If the address is not loaded, load it
-    if !@sets[setIndex].inSet(address)
-      # Get the data from memory
-      data = Memory.getLine(address, @blockSize)
-      # Add the data to the correct set
-      @sets[setIndex].load(address, data)
-    # Set the value
-    @sets[setIndex].set(address, value)
-    return
-
 ###############################################################################
 #
 #   Transpose Algorithms
 #
 ###############################################################################
 
-naive = ->
-  console.log("Naive")
+naive = =>
+  console.log("Running Naive algorithm")
+  for m in [0...Model.matrixA.y]
+    for n in [0...Model.matrixA.x]
+      Model.matrixB.set(m, n, Model.matrixA.get(n, m))
   return
 
-naiveBlocked = ->
+naiveBlocked = =>
   console.log("Naive-blocked")
   return
 
-deferredBlocked = ->
+deferredBlocked = =>
   console.log("Deferred blocked")
   return
 
@@ -548,29 +592,9 @@ deferredBlocked = ->
 ###############################################################################
 
 reset = ->
+  Cache.flush()
   Model.reset()
   Simulator.clear()
-  return
-
-# Reset button event handler
-$("#reset-btn").click(reset)
-
-# Naive algorithm event handler
-$("#naive-btn").click ->
-  reset()
-  naive()
-  return
-
-# Naive algorithm event handler
-$("#naive-blocked-btn").click ->
-  reset()
-  naiveBlocked()
-  return
-
-# Naive algorithm event handler
-$("#deferred-blocked-btn").click ->
-  reset()
-  deferredBlocked()
   return
 
 ###############################################################################
@@ -579,13 +603,42 @@ $("#deferred-blocked-btn").click ->
 #
 ###############################################################################
 
-$ ->
+$ =>
+  # Reset button event handler
+  $("#reset-btn").click(reset)
+
+  # Naive algorithm event handler
+  $("#naive-btn").click ->
+    reset()
+    Simulator.clear()
+    naive()
+    Simulator.simulate()
+    return
+
+  # Naive algorithm event handler
+  $("#naive-blocked-btn").click ->
+    reset()
+    Simulator.clear()
+    naiveBlocked()
+    Simulator.simulate()
+    return
+
+  # Naive algorithm event handler
+  $("#deferred-blocked-btn").click ->
+    reset()
+    Simulator.clear()
+    deferredBlocked()
+    Simulator.simulate()
+    return
+  
   matrixAAddress = Memory.alloc(32 * 32)
   matrixBAddress = Memory.alloc(32 * 32)
   Model.initialize(32, 32, matrixAAddress, matrixBAddress)
-  cache = new Cache(1024, 1, 32)
-  cache.get(0)
-  cache.get(32)
-  cache.get(0)
-  console.log("Simulating...");
+  Cache.initialize(1024, 1, 32)
+  ###
+  Cache.get(0)
+  Cache.get(32)
+  Cache.get(0)
+  Cache.get(matrixBAddress)
   Simulator.simulate()
+  ###
