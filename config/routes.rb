@@ -3,7 +3,7 @@ Rails.application.routes.draw do
   root 'menu#index'
   # Available pages
   get 'menu/index'
-  get 'simulator/ThirtyTwo'
-  get 'simulator/SixtyFour'
-  get 'simulator/SixtyThree'
+  get 'simulator/thirtytwo'
+  get 'simulator/sixtyfour'
+  get 'simulator/sixtythree'
 end

@@ -1,10 +1,10 @@
 class SimulatorController < ApplicationController
-  def ThirtyTwo
+  def thirtytwo
   end
 
-  def SixtyFour
+  def sixtyfour
   end
 
-  def SixtyThree
+  def sixtyfhree
   end
 end

@@ -1,2 +1,22 @@
-<h1>Menu#index</h1>
-<p>Find me in app/views/menu/index.html.erb</p>
+<!--
+  index.html.erb
+  Page displayed when navigating to the application. Allows the user to
+  switch to any of the available simulators.
+-->
+<%
+  # Class used for buttons in the menu
+  btn_class = "btn btn-primary w-100 my-1"
+%>
+
+<!-- Containers used to center the menu in the middle of the screen -->
+<div class="root h-center h-100">
+  <div class="v-center align-items-stretch">
+    <!-- Menu items container -->
+    <div class="v-center align-items-stretch p-4 border border-primary border-thick">
+      <h1 class="text-center">Available Simulators</h1>
+      <%= link_to "32x32 Matrix", simulator_thirtytwo_path, class: btn_class %>
+      <%= link_to "64x64 Matrix", simulator_sixtyfour_path, class: btn_class %>
+      <%= link_to "63x67 Matrix", simulator_sixtythree_path, class: btn_class %>
+    </div>
+  </div>
+</div>
