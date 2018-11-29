@@ -43,6 +43,30 @@ class Matrix
     index = (address - @address) / integerSize
     return @elements[index]
 
+# Class used to manage a statistics element on the page
+class StatisticsElement
+  # Constructs the element and initializes it with the specified value
+  # @param elementID String containing the html ID of the element. Should not
+  #   be prefixed with '#'
+  # @param value Initial value for the element
+  constructor: (elementID, @value) ->
+    @element = $("#" + elementID)
+    @updateValue(@value)
+
+  # Decrements the element's value by 1
+  decrement: =>
+    @updateValue(@value - 1)
+
+  # Increments the element's value by 1
+  increment: =>
+    @updateValue(@value + 1)
+
+  # Updates the element's displayed value
+  updateValue: (newValue) =>
+    @value = newValue
+    @element.text(newValue)
+    return
+
 ###############################################################################
 #
 #   Singleton Classes
@@ -108,17 +132,20 @@ class Cache
   @get: (address) =>
     # Get the set that the address should be in
     setIndex = @calcSet(address)
+    # Track whether the address had to be loaded
+    wasLoaded = false
     # If the address is not loaded, load it
     if !@sets[setIndex].inSet(address)
       # Get the data from memory
       data = Memory.getLine(address, @blockSize)
       # Calculate the address of the first byte of the returned cache line
-      startAddress = 
+      startAddress =
         Memory.calcCacheAlignmentBoundary(address, @blockSize)
       # Add the data to the correct set
       @sets[setIndex].load(startAddress, data)
+      wasLoaded = true
     # Return the data at the given element
-    return @sets[setIndex].get(address)
+    return @sets[setIndex].get(address, wasLoaded)
 
   # Sets an integer to a specific value. If the address is not in cache,
   #   the cache line containing the address will be loaded into the cache.
@@ -127,17 +154,20 @@ class Cache
   @set: (address, value) =>
     # Get the set that the address should be in
     setIndex = @calcSet(address)
+    # Track whether the address had to be loaded
+    wasLoaded = false
     # If the address is not loaded, load it
     if !@sets[setIndex].inSet(address)
       # Get the data from memory
       data = Memory.getLine(address, @blockSize)
       # Calculate the address of the first byte of the returned cache line
-      startAddress = 
+      startAddress =
         Memory.calcCacheAlignmentBoundary(address, @blockSize)
       # Add the data to the correct set
       @sets[setIndex].load(startAddress, data)
+      wasLoaded = true
     # Set the value
-    @sets[setIndex].set(address, value)
+    @sets[setIndex].set(address, value, wasLoaded)
     return
 
 # Class used to track the current simulation time. This class assumes that
@@ -277,9 +307,26 @@ class Simulator
   # Delay between updates, in milliseconds
   @delay: 50
 
+  # Statistics Sidebar DOM Element references
+  @cacheHits: null
+  @cacheMisses: null
+  @cacheLoads: null
+  @cacheEvictions: null
+  @cacheUsage: null
+  @cacheSize: null
+  @cachePercentage: null
+
   # Clears all saved actions
   @clear: =>
     @data = []
+
+  @initialize: =>
+    @cacheHits = new StatisticsElement("cache-hits", 0)
+    @cacheMisses = new StatisticsElement("cache-misses", 0)
+    @cacheEvictions = new StatisticsElement("cache-evictions", 0)
+    @cacheUsage = new StatisticsElement("cache-usage", 0)
+    @cacheSize = new StatisticsElement("cache-size", Cache.cacheLineCount)
+    @cachePercentage = new StatisticsElement("cache-percentage", 0)
 
   # Adds an action to the simulation log
   # @param action Action object to store
@@ -302,6 +349,10 @@ class Simulator
         setTimeout((() -> run(index + 1)), @delay)
       return
     setTimeout((() => run(0)), @delay)
+
+  # Updates the cache usage percentage displayed on the page
+  @updateCacheUsagePercentage: =>
+    @cachePercentage.updateValue(@cacheUsage.value / @cacheSize.value * 100)
 
 ###############################################################################
 #
@@ -348,10 +399,14 @@ class Action
   finish: =>
 
 class AccessElement extends Action
-  constructor: (address) ->
+  # Constructs the access element action object
+  # @param address Address of the element that was accessed
+  # @param hit Specifies whether a cache hit occurred
+  constructor: (address, @hit) ->
     super(address)
   run: =>
     Model.applyAction(EAction.Accessed, @matrix, @address)
+    if @hit then Simulator.cacheHits.increment() else Simulator.cacheMisses.increment()
     return
   finish: =>
     Model.applyAction(EAction.Loaded, @matrix, @address)
@@ -368,6 +423,8 @@ class LineLoad extends Action
   run: =>
     for offset in [0...@count * integerSize] by integerSize
       Model.applyAction(EAction.Loaded, @matrix, @address + offset)
+    Simulator.cacheUsage.increment()
+    Simulator.updateCacheUsagePercentage()
     return
   finish: =>
     # Nothing to do
@@ -381,6 +438,9 @@ class LineEviction extends Action
   run: =>
     for offset in [0...@count * integerSize] by integerSize
       Model.applyAction(EAction.Evicted, @matrix, @address + offset)
+    Simulator.cacheEvictions.increment()
+    Simulator.cacheUsage.decrement()
+    Simulator.updateCacheUsagePercentage()
     return
   finish: =>
     for offset in [0...@count * integerSize] by integerSize
@@ -417,13 +477,15 @@ class CacheLine
   # Returns the value of the integer at the given address.
   # @param address Address to retrieve the integer from. Must
   #   be a multiple of four.
-  get: (address) =>
+  # @param wasLoaded Boolean indicating whether the element was just
+  #   loaded into the cache.
+  get: (address, wasLoaded) =>
     # Update the last accessed time
     @lastUsed = Clock.getTime()
     # Calculate the offset required to fetch the element
     offset = (address - @address) / integerSize
     # Log the data access
-    Simulator.logAction(new AccessElement(address))
+    Simulator.logAction(new AccessElement(address, !wasLoaded))
     return @data[offset]
 
   # Checks whether the cache line is valid
@@ -472,7 +534,9 @@ class CacheLine
   # Sets the value of an integer. The address passed to this function
   #   must be a multiple of 4 and must be an address located within
   #   this cache line.
-  set: (address, value) =>
+  # @param wasLoaded Boolean indicating whether the element was just
+  #   loaded into the cache.
+  set: (address, value, wasLoaded) =>
     # Update the last accessed time
     @lastUsed = Clock.getTime()
     # Calculate the offset required to fetch the element
@@ -482,7 +546,7 @@ class CacheLine
     # Also write the data to main memory
     Memory.set(address, value)
     # Log the data write
-    Simulator.logAction(new AccessElement(address))
+    Simulator.logAction(new AccessElement(address, !wasLoaded))
     return
 
 # Class used to represent a set of cache lines
@@ -495,7 +559,10 @@ class CacheSet
       @blocks.push(new CacheLine())
 
   # Returns the value at the given address
-  get: (address) =>
+  # @param address Address of the element to access
+  # @param wasLoaded Boolean indicating whether the element was just
+  #   loaded into the cache
+  get: (address, wasLoaded) =>
     # Locate the block with the address
     for block in @blocks
       # If the block is invalid, ignore it
@@ -504,7 +571,7 @@ class CacheSet
       # If the address is in the block, return the value
       #   at the address
       if block.inLine(address)
-        return block.get(address)
+        return block.get(address, wasLoaded)
     return null
 
   # Checks whether the address is present in the set
@@ -551,8 +618,10 @@ class CacheSet
   # Sets the value of an integer.
   # @param address Address of the integer to set. This address must be
   #   a multiple of 4 and must be an address located within this cache set.
-  # @param value Value to set the integer to.
-  set: (address, value) =>
+  # @param value Value to set the integer to
+  # @param wasLoaded Boolean indicating whether the element was just
+  #   loaded into the cache
+  set: (address, value, wasLoaded) =>
     # Locate the block with the address
     for block in @blocks
       # If the block is invalid, ignore it
@@ -560,7 +629,7 @@ class CacheSet
         continue
       # If the address is in the block, write the value to the block
       if block.inLine(address)
-        block.set(address, value)
+        block.set(address, value, wasLoaded)
         return
     return
 
@@ -630,11 +699,12 @@ $ =>
     deferredBlocked()
     Simulator.simulate()
     return
-  
+
   matrixAAddress = Memory.alloc(32 * 32)
   matrixBAddress = Memory.alloc(32 * 32)
   Model.initialize(32, 32, matrixAAddress, matrixBAddress)
   Cache.initialize(1024, 1, 32)
+  Simulator.initialize()
   ###
   Cache.get(0)
   Cache.get(32)
