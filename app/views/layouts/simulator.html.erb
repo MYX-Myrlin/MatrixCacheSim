@@ -1,0 +1,76 @@
+<!--
+  simulator.html.erb
+  Page hosting matrix simulations.
+-->
+<%
+  # Class used for the buttons at the bottom of the page
+  btn_class = "btn btn-success mx-1"
+%>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Matrix Cache Sim</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+  </head>
+
+  <body>
+    <!-- Root Container -->
+    <div class="d-flex flex-column h-100">
+      <!-- Title Bar -->
+      <h1 class="bg-primary text-center text-white p-2">
+        <%= @height %>x<%= @width %> Matrix Simulator
+      </h1>
+      <!-- Matrices -->
+      <div class="d-flex justify-content-around flex-fill m-4">
+        <%= render partial: 'partials/matrix', locals: {
+          name: "Matrix A",
+          id: "matrixA",
+          height: @height,
+          width: @width
+        } %>
+        <%= render partial: 'partials/matrix', locals: {
+          name: "Matrix B",
+          id: "matrixB",
+          height: @width,
+          width: @height
+        } %>
+        <%= render 'partials/stats-bar' %>
+      </div>
+      <!-- Algorithms -->
+      <div class="d-flex flex-column align-items-stretch">
+        <h3 class="bg-secondary text-center text-white p-1">
+          Available Algorithms
+        </h3>
+        <!-- Algorithm Buttons -->
+        <div class="d-flex justify-content-center">
+          <button class="<%= btn_class %>" id="reset-btn">
+            Reset
+          </button>
+          <button class="<%= btn_class %>" id="naive-btn">
+            Naive
+          </button>
+          <button class="<%= btn_class %>" id="naive-blocked-4-btn">
+            Naive Blocked-4
+          </button>
+          <button class="<%= btn_class %>" id="naive-blocked-8-btn">
+            Naive Blocked-8
+          </button>
+          <button class="<%= btn_class %>" id="deferred-blocked-4-btn">
+            Deferred Blocked-4
+          </button>
+          <button class="<%= btn_class %>" id="deferred-blocked-8-btn">
+            Deferred Blocked-8
+          </button>
+        </div>
+      </div>
+      <%= render 'partials/custom-algo' %>
+    </div>
+    <!-- Hidden elements used to store the matrix's size as part of the page -->
+    <div class="d-none" id="matrixA-height"><%= @height %></div>
+    <div class="d-none" id="matrixA-width"><%= @width %></div>
+  </body>
+</html>

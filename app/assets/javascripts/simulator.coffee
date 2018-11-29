@@ -782,8 +782,13 @@ $ =>
     Simulator.simulate()
     return
 
-  matrixAAddress = Memory.alloc(32 * 32)
-  matrixBAddress = Memory.alloc(32 * 32)
-  Model.initialize(32, 32, matrixAAddress, matrixBAddress)
+  # Pull the matrix dimensions from the page
+  height = $("#matrixA-height").text()
+  width = $("#matrixA-width").text()
+  size = height * width
+
+  matrixAAddress = Memory.alloc(size)
+  matrixBAddress = Memory.alloc(size)
+  Model.initialize(width, height, matrixAAddress, matrixBAddress)
   Cache.initialize(1024, 1, 32)
   Simulator.initialize()
