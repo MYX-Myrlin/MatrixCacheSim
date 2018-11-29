@@ -778,10 +778,3 @@ $ =>
   Model.initialize(32, 32, matrixAAddress, matrixBAddress)
   Cache.initialize(1024, 1, 32)
   Simulator.initialize()
-  ###
-  Cache.get(0)
-  Cache.get(32)
-  Cache.get(0)
-  Cache.get(matrixBAddress)
-  Simulator.simulate()
-  ###
