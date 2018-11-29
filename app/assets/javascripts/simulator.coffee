@@ -483,7 +483,7 @@ class LineLoad extends Action
       address = @address + offset
       # This if statement is necessary to handle cases where a cache line
       # loads in data that doesn't belong to the matrix (ie padding)
-      if Model.calcMatrix(address) == @matrix
+      if Model.calcMatrix(address) != EMatrix.MatrixUndefined
         Model.applyAction(EAction.Loaded, @matrix, @address + offset)
     Simulator.cacheUsage.increment()
     Simulator.setCacheLineStatus(@setIndex, @lineIndex, true)
@@ -503,7 +503,7 @@ class LineEviction extends Action
       address = @address + offset
       # This if statement is necessary to handle cases where a cache line
       # loads in data that doesn't belong to the matrix (ie padding)
-      if Model.calcMatrix(address) == @matrix
+      if Model.calcMatrix(address) != EMatrix.MatrixUndefined
         Model.applyAction(EAction.Evicted, @matrix, @address + offset)
     Simulator.cacheEvictions.increment()
     Simulator.cacheUsage.decrement()
