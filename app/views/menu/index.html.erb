@@ -10,13 +10,43 @@
 
 <!-- Containers used to center the menu in the middle of the screen -->
 <div class="root h-center h-100">
-  <div class="v-center align-items-stretch">
-    <!-- Menu items container -->
-    <div class="v-center align-items-stretch p-4 border border-primary border-thick">
-      <h1 class="text-center">Available Simulators</h1>
-      <%= link_to "32x32 Matrix", simulator_thirtytwo_path, class: btn_class %>
-      <%= link_to "64x64 Matrix", simulator_sixtyfour_path, class: btn_class %>
-      <%= link_to "63x67 Matrix", simulator_sixtythree_path, class: btn_class %>
+  <div class="v-center border border-primary border-thick m-4">
+    <!-- Main Menu -->
+    <div class="v-center align-items-stretch">
+      <!-- Menu items container -->
+      <div class="v-center align-items-stretch p-4">
+        <h1 class="text-center">Available Simulators</h1>
+        <%= link_to "32x32 Matrix", simulator_thirtytwo_path, class: btn_class %>
+        <%= link_to "64x64 Matrix", simulator_sixtyfour_path, class: btn_class %>
+        <%= link_to "63x67 Matrix", simulator_sixtythree_path, class: btn_class %>
+      </div>
+    </div>
+    <!-- Planned Features & Known Issues -->
+    <div class="d-flex justify-content-around">
+      <!-- Planned Features container -->
+      <div class="col-6">
+        <h3>Planned Features:</h3>
+        <ul>
+          <li>Mobile Layout</li>
+          <li>Algorithm Verification</li>
+          <li>Statistics Bar Revamp</li>
+        </ul>
+      </div>
+      <!-- Known Issues container -->
+      <div class="col-6">
+        <h3>Known Issues:</h3>
+        <ul>
+          <li>Layout breaks on mobile devices</li>
+          <li>On lower resolutions, some text on the sidebar overlaps</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Version & Author -->
+    <div class="d-flex justify-content-between p-2">
+      <span>Written by Zach Wilson</span>
+      <span>Last updated 11/29/2018</span>
     </div>
   </div>
 </div>
+
+
