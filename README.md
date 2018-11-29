@@ -11,3 +11,4 @@
 * Configure project to display 64x64 and 63x67 matrices
 * Add support for entering and running custom algorithms
 * Implement proper visualization of cache line usage
+* Add support for other cache associativities
