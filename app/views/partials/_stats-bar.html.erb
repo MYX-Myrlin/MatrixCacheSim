@@ -30,4 +30,19 @@
     <span id="cache-percentage">0</span>
     <span>%)</span>
   </div>
+  <!-- Cache Visualizer -->
+  <div class="d-flex flex-column align-self-center align-items-stretch w-50"
+    id="cache-visualizer">
+    <% (0..31).each do |index| %>
+      <!-- Cache visualizer element -->
+      <div class="d-flex justify-content-between">
+        <!-- Set number -->
+        <p><%= index %>:&nbsp;</p>
+        <!-- Status -->
+        <div class="border w-75 cache-line-status">
+          &nbsp;
+        </div>
+      </div>
+    <% end %>
+  </div>
 </div>

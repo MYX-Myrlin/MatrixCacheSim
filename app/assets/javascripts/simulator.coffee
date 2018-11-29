@@ -315,10 +315,12 @@ class Simulator
   @cacheUsage: null
   @cacheSize: null
   @cachePercentage: null
+  @cacheVisualizerElements: []
 
   # Clears all saved actions
   @clear: =>
     @data = []
+    @updateCacheVisualization()
 
   @initialize: =>
     @cacheHits = new StatisticsElement("cache-hits", 0)
@@ -327,6 +329,9 @@ class Simulator
     @cacheUsage = new StatisticsElement("cache-usage", 0)
     @cacheSize = new StatisticsElement("cache-size", Cache.cacheLineCount)
     @cachePercentage = new StatisticsElement("cache-percentage", 0)
+    cacheStatusElements = $(".cache-line-status")
+    for i in [0...cacheStatusElements.length]
+      @cacheVisualizerElements.push(cacheStatusElements.eq(i))
 
   # Adds an action to the simulation log
   # @param action Action object to store
@@ -339,6 +344,7 @@ class Simulator
     # Executes an action
     run = (index) =>
       @data[index].run()
+      @updateCacheVisualization()
       setTimeout((() -> finish(index)), @delay)
       return
     # Completes an action
@@ -353,6 +359,17 @@ class Simulator
   # Updates the cache usage percentage displayed on the page
   @updateCacheUsagePercentage: =>
     @cachePercentage.updateValue(@cacheUsage.value / @cacheSize.value * 100)
+
+  # Updates the cache visualization
+  @updateCacheVisualization: =>
+    # Iterate over each cache set and update the visualization
+    index = 0
+    for set in Cache.sets
+      color = "#dc3545" # Bootstrap default red
+      if set.blocks[0].isValid()
+        color = "#28a745" # Bootstrap default green
+      @cacheVisualizerElements[index].css("background-color", color)
+      ++index
 
 ###############################################################################
 #
