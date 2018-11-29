@@ -276,6 +276,18 @@ class Model
       when EAction.Evicted then element.css("background-color", "red")
     return
 
+  # Calculates which matrix the address belongs to
+  # @param address Address of the element to check
+  # @returns Returns a EMatrix value corresponding to the matrix the address
+  #   belongs to
+  @calcMatrix: (address) =>
+    if @matrixA.address <= address && address < @matrixA.address + @matrixA.elements.length * integerSize
+      return EMatrix.MatrixA
+    else if @matrixB.address <= address && address < @matrixB.address + @matrixB.elements.length * integerSize
+      return EMatrix.MatrixB
+    else
+      return EMatrix.MatrixUndefined
+
   # Searches for and adds references to the elements in each matrix
   # @param matrixX Specifies the width of matrix A. This value will be swapped
   #   with the specified height of matrix A when calculating the size of
@@ -403,6 +415,7 @@ class EAction
 
 # Enum used to identify the matrix to apply an action to
 class EMatrix
+  @MatrixUndefined: -1
   @MatrixA: 0
   @MatrixB: 1
 
@@ -418,7 +431,7 @@ class Action
   constructor: (@address) ->
     # If the address is before the first byte of matrix B, the address belongs
     #   to matrix A
-    @matrix = if (@address < Model.matrixB.address) then EMatrix.MatrixA else EMatrix.MatrixB
+    @matrix = Model.calcMatrix(@address)
   # Function to be overloaded by child classes. Applies the action to the
   #   simulation page elements
   run: =>
@@ -450,7 +463,11 @@ class LineLoad extends Action
     super(address)
   run: =>
     for offset in [0...@count * integerSize] by integerSize
-      Model.applyAction(EAction.Loaded, @matrix, @address + offset)
+      address = @address + offset
+      # This if statement is necessary to handle cases where a cache line
+      # loads in data that doesn't belong to the matrix (ie padding)
+      if Model.calcMatrix(address) == @matrix
+        Model.applyAction(EAction.Loaded, @matrix, @address + offset)
     Simulator.cacheUsage.increment()
     Simulator.updateCacheUsagePercentage()
     return
@@ -465,14 +482,22 @@ class LineEviction extends Action
     super(address)
   run: =>
     for offset in [0...@count * integerSize] by integerSize
-      Model.applyAction(EAction.Evicted, @matrix, @address + offset)
+      address = @address + offset
+      # This if statement is necessary to handle cases where a cache line
+      # loads in data that doesn't belong to the matrix (ie padding)
+      if Model.calcMatrix(address) == @matrix
+        Model.applyAction(EAction.Evicted, @matrix, @address + offset)
     Simulator.cacheEvictions.increment()
     Simulator.cacheUsage.decrement()
     Simulator.updateCacheUsagePercentage()
     return
   finish: =>
     for offset in [0...@count * integerSize] by integerSize
-      Model.applyAction(EAction.Clear, @matrix, @address + offset)
+      address = @address + offset
+      # This if statement is necessary to handle cases where a cache line
+      # loads in data that doesn't belong to the matrix (ie padding)
+      if Model.calcMatrix(address) == @matrix
+        Model.applyAction(EAction.Clear, @matrix, @address + offset)
     return
 
 ###############################################################################
