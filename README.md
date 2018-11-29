@@ -7,6 +7,8 @@
 * Run `bundle exec rails s` to launch the Rails web server (depending on your Ruby configuration, entering `rails s` may also work)
 * Open a browser and navigate to `localhost:3000`
 
+> Note: The tool isn't configured to stop a simulation currently in progress. When switching between simulations, refresh the page to stop the current simulation before starting the next simulation.
+
 # Todo
 * Configure project to display 64x64 and 63x67 matrices
 * Add support for entering and running custom algorithms
