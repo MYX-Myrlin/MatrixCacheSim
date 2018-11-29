@@ -118,8 +118,8 @@ class Cache
     @setMask = ~0 << @indexBits
     @setMask = ~@setMask << @offsetBits
     # Initialize the sets
-    for [0...@setCount]
-      @sets.push(new CacheSet(@associativity))
+    for i in [0...@setCount]
+      @sets.push(new CacheSet(@associativity, i))
 
   # Calculates the index of the set that the address belongs to
   @calcSet: (address) =>
@@ -348,7 +348,10 @@ class Simulator
     @cacheUsage.reset()
     @cacheSize.reset()
     @cachePercentage.reset()
-    @updateCacheVisualization()
+    # Set each cache line as invalid on the cache visualizer
+    for element in @cacheVisualizerElements
+      color = "#dc3545" # Bootstrap default red
+      element.css("background-color", color)
 
   @initialize: =>
     @cacheHits = new StatisticsElement("cache-hits", 0)
@@ -366,13 +369,24 @@ class Simulator
   @logAction: (action) =>
     @data.push(action)
 
+  # Marks a cache line as valid or invalid on the cache visualizer
+  # @param setIndex Index of the cache set that the cache line belongs to
+  # @param lineIndex Index of the cache line within its cache set
+  # @param status Boolean indicating whether the cache line is valid. Should
+  #   be set to true if the line is valid
+  @setCacheLineStatus: (setIndex, lineIndex, status) =>
+    color = "#28a745" # Bootstrap default green
+    # Since the current implementation only deals with direct mapped caches,
+    # the set index can be used as the cache visualizer element's index and
+    # the line index can be ignored
+    @cacheVisualizerElements[setIndex].css("background-color", color)
+
   # Runs through all saved actions and updates the simulation with their
   #   effects
   @simulate: =>
     # Executes an action
     run = (index) =>
       @data[index].run()
-      @updateCacheVisualization()
       @finishHandle = setTimeout((() -> finish(index)), @delay)
       return
     # Completes an action
@@ -396,17 +410,6 @@ class Simulator
   # Updates the cache usage percentage displayed on the page
   @updateCacheUsagePercentage: =>
     @cachePercentage.updateValue(@cacheUsage.value / @cacheSize.value * 100)
-
-  # Updates the cache visualization
-  @updateCacheVisualization: =>
-    # Iterate over each cache set and update the visualization
-    index = 0
-    for set in Cache.sets
-      color = "#dc3545" # Bootstrap default red
-      if set.blocks[0].isValid()
-        color = "#28a745" # Bootstrap default green
-      @cacheVisualizerElements[index].css("background-color", color)
-      ++index
 
 ###############################################################################
 #
@@ -473,7 +476,7 @@ class LineLoad extends Action
   #   accessed
   # @param address Byte address of the first element
   # @param count Number of elements in the line
-  constructor: (address, @count) ->
+  constructor: (address, @count, @setIndex, @lineIndex) ->
     super(address)
   run: =>
     for offset in [0...@count * integerSize] by integerSize
@@ -483,6 +486,7 @@ class LineLoad extends Action
       if Model.calcMatrix(address) == @matrix
         Model.applyAction(EAction.Loaded, @matrix, @address + offset)
     Simulator.cacheUsage.increment()
+    Simulator.setCacheLineStatus(@setIndex, @lineIndex, true)
     Simulator.updateCacheUsagePercentage()
     return
   finish: =>
@@ -492,7 +496,7 @@ class LineEviction extends Action
   # Specifies the line loaded
   # @param address Byte address of the first element
   # @param count Number of elements in the line
-  constructor: (address, @count) ->
+  constructor: (address, @count, @setIndex, @lineIndex) ->
     super(address)
   run: =>
     for offset in [0...@count * integerSize] by integerSize
@@ -503,6 +507,7 @@ class LineEviction extends Action
         Model.applyAction(EAction.Evicted, @matrix, @address + offset)
     Simulator.cacheEvictions.increment()
     Simulator.cacheUsage.decrement()
+    Simulator.setCacheLineStatus(@setIndex, @lineIndex, false)
     Simulator.updateCacheUsagePercentage()
     return
   finish: =>
@@ -522,14 +527,10 @@ class LineEviction extends Action
 
 # Class used to represent a cache line
 class CacheLine
-  # Creates the cache line with the specified information
-  # @address Address of the first byte in the cache line.
-  #   Should always be a multiple of 4.
-  # @data Array containing the data in the cache. Should be
-  #   an array of ints. Each element in the data array is
-  #   assumed to be 4 bytes for purposes of calculating
-  #   cache line size.
-  constructor: ->
+  # Initializes the cache line
+  # @param setIndex Index of the cache set that the line belongs to
+  # @param lineIndex Index of the cache line within the set the line belongs to
+  constructor: (@setIndex, @lineIndex) ->
     # Address of the first byte in the cache
     @address = 0
     # Data array for the cache
@@ -562,7 +563,8 @@ class CacheLine
   # Invalidates the cache line
   invalidate: () =>
     # Log the eviction
-    Simulator.logAction(new LineEviction(@address, @data.length))
+    Simulator.logAction(new LineEviction(@address, @data.length,
+      @setIndex, @lineIndex))
     # Clear the cache line's data
     @address = 0
     @data = []
@@ -595,7 +597,8 @@ class CacheLine
     @size = @data.length * integerSize
     @valid = true
     # Log the load
-    Simulator.logAction(new LineLoad(@address, @data.length))
+    Simulator.logAction(new LineLoad(@address, @data.length
+      @setIndex, @lineIndex))
     return
 
   # Sets the value of an integer. The address passed to this function
@@ -619,11 +622,13 @@ class CacheLine
 # Class used to represent a set of cache lines
 class CacheSet
   # Initializes the cache set with the specified number of cache lines
-  constructor: (setCount) ->
+  # @param setCount Number of cache lines in the set
+  # @param index Index of the set within the cache
+  constructor: (setCount, @index) ->
     # Array of cache lines in the set
     @blocks = []
-    for [0...setCount]
-      @blocks.push(new CacheLine())
+    for i in [0...setCount]
+      @blocks.push(new CacheLine(@index, i))
 
   # Returns the value at the given address
   # @param address Address of the element to access
