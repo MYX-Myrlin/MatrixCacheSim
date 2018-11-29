@@ -10,5 +10,5 @@
 > Note: The tool isn't configured to stop a simulation currently in progress. When switching between simulations, refresh the page to stop the current simulation before starting the next simulation.
 
 # Todo
-* Implement proper visualization of cache line usage
+* Add algorithm validation
 * Add support for other cache associativities
