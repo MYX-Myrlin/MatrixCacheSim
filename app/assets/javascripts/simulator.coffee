@@ -707,7 +707,6 @@ deferredBlocked = (blockSize) =>
           else
             Model.matrixB.set(m, n, Model.matrixA.get(n, m))
         if deferred?
-          console.log("Deferred write")
           Model.matrixB.set(m, m, deferred)
   return
 
