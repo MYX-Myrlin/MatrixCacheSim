@@ -1,24 +1,8 @@
-# README
+# Setup
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
-
-Things you may want to cover:
-
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+* Download or clone the project
+* Open a terminal window in the project's folder
+* Run `bundle install`
+  * If you get an error, you may need to look up how to install Ruby (and/or Rails) onto your system
+* Run `bundle exec rails s` to launch the Rails web server (depending on your Ruby configuration, entering `rails s` may also work)
+* Open a browser and navigate to `localhost:3000`
