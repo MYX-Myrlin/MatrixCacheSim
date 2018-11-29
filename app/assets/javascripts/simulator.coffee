@@ -761,6 +761,7 @@ deferredBlocked = (blockSize) =>
 ###############################################################################
 
 reset = ->
+  document.body.scrollTop = document.documentElement.scrollTop = 0;
   Simulator.stop()
   Cache.flush()
   Model.reset()
@@ -821,7 +822,6 @@ $ =>
   $("#run-custom").click ->
     reset()
     Simulator.clear()
-    document.body.scrollTop = document.documentElement.scrollTop = 0;
     eval($("#custom-func").val())
     Simulator.simulate()
     return
