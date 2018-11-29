@@ -15,10 +15,10 @@
   <h3 class="bg-secondary p-2 text-center text-white"><%= name %></h3>
   <% (1..height).each do |y| %>
     <!-- Row container -->
-    <div class="d-flex flex-fill">
+    <div class="d-flex flex-fill flex-fix">
       <% (1..width).each do |x| %>
         <!-- Matrix element -->
-        <div class="flex-fill border border-primary <%= "#{id}-element" %>">
+        <div class="flex-fill flex-fix border border-primary <%= "#{id}-element" %>">
           <span>&nbsp;</span>
         </div>
       <% end %>
