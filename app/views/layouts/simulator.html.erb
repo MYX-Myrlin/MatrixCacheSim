@@ -61,31 +61,58 @@
         } %>
         <%= render 'partials/stats-bar' %>
       </div>
-      <!-- Algorithms -->
-      <div class="d-flex flex-column align-items-stretch">
-        <h3 class="bg-secondary text-center text-white p-1">
-          Available Algorithms
-        </h3>
-        <!-- Algorithm Buttons -->
-        <div class="d-flex justify-content-center">
-          <button class="<%= btn_class %>" id="reset-btn">
-            Stop/Reset
-          </button>
-          <button class="<%= btn_class %>" id="naive-btn">
-            Naive
-          </button>
-          <button class="<%= btn_class %>" id="naive-blocked-4-btn">
-            Naive Blocked-4
-          </button>
-          <button class="<%= btn_class %>" id="naive-blocked-8-btn">
-            Naive Blocked-8
-          </button>
-          <button class="<%= btn_class %>" id="deferred-blocked-4-btn">
-            Deferred Blocked-4
-          </button>
-          <button class="<%= btn_class %>" id="deferred-blocked-8-btn">
-            Deferred Blocked-8
-          </button>
+      <!-- Algorithms & Options -->
+      <div class="d-flex py-2">
+        <!-- Algorithms -->
+        <div class="d-flex flex-fill flex-column align-items-stretch">
+          <h3 class="bg-secondary text-center text-white p-1">
+            Available Algorithms
+          </h3>
+          <!-- Algorithm Buttons -->
+          <div class="d-flex justify-content-center">
+            <button class="<%= btn_class %>" id="reset-btn">
+              Stop/Reset
+            </button>
+            <button class="<%= btn_class %>" id="naive-btn">
+              Naive
+            </button>
+            <button class="<%= btn_class %>" id="naive-blocked-4-btn">
+              Naive Blocked-4
+            </button>
+            <button class="<%= btn_class %>" id="naive-blocked-8-btn">
+              Naive Blocked-8
+            </button>
+            <button class="<%= btn_class %>" id="deferred-blocked-4-btn">
+              Deferred Blocked-4
+            </button>
+            <button class="<%= btn_class %>" id="deferred-blocked-8-btn">
+              Deferred Blocked-8
+            </button>
+          </div>
+        </div>
+        <!-- Options -->
+        <div class="d-flex flex-fill flex-column align-items-stretch">
+          <h3 class="bg-secondary text-center text-white p-1">
+            Simulation Speed
+          </h3>
+          <!-- Option Buttons -->
+          <div class="d-flex justify-content-center">
+            <button class="<%= btn_class %>" id="speed-slowest-btn">
+              Slowest
+            </button>
+            <button class="<%= btn_class %>" id="speed-slow-btn">
+              Slow
+            </button>
+            <button class="btn btn-outline-success mx-1" id="speed-normal-btn">
+              Normal
+            </button>
+            <button class="<%= btn_class %>" id="speed-fast-btn">
+              Fast
+            </button>
+            <button class="<%= btn_class %>" id="speed-fastest-btn">
+              Fastest
+            </button>
+          </div>
         </div>
       </div>
       <%= render 'partials/custom-algo' %>

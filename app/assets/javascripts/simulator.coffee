@@ -9,6 +9,27 @@ integerSize = 4
 
 ###############################################################################
 #
+#   Enumerations
+#
+###############################################################################
+
+# Enum used to identify the matrix to apply an action to
+class EMatrix
+  @MatrixUndefined: -1
+  @MatrixA: 0
+  @MatrixB: 1
+
+# Enum used to identify the speed to run the simulation at
+# Each enum's integer value represents the number of milliseconds per action
+class ESpeed
+  @Slowest = 250
+  @Slow = 100
+  @Normal = 50
+  @Fast = 25
+  @Fastest = 10
+
+###############################################################################
+#
 #   Data Classes
 #
 ###############################################################################
@@ -381,6 +402,11 @@ class Simulator
     # the line index can be ignored
     @cacheVisualizerElements[setIndex].css("background-color", color)
 
+  # Sets the speed of the simulation
+  # @param speed ESpeed value to use as the speed of the simulation
+  @setSpeed: (speed) =>
+    @delay = speed
+
   # Runs through all saved actions and updates the simulation with their
   #   effects
   @simulate: =>
@@ -429,12 +455,6 @@ class EAction
   # Enum value used to indicate that all effects should be cleared from
   #   the element
   @Clear: 3
-
-# Enum used to identify the matrix to apply an action to
-class EMatrix
-  @MatrixUndefined: -1
-  @MatrixA: 0
-  @MatrixB: 1
 
 ###############################################################################
 #
@@ -825,6 +845,49 @@ $ =>
     eval($("#custom-func").val())
     Simulator.simulate()
     return
+
+  # Function used to set a single button to toggled
+  # @param btn Button to set as toggled
+  toggleBtn = (btn) ->
+    # References to each of the toggleable buttons
+    buttons = [
+      $("#speed-slowest-btn"),
+      $("#speed-slow-btn"),
+      $("#speed-normal-btn"),
+      $("#speed-fast-btn"),
+      $("#speed-fastest-btn")
+    ]
+
+    # CSS class used normally
+    normal = "btn-success"
+    # CSS class used when toggled
+    toggled = "btn-outline-success"
+
+    # Set each button's CSS class
+    for element in buttons
+      element.removeClass(normal)
+      element.removeClass(toggled)
+      if element[0] == btn[0]
+        element.addClass(toggled)
+      else
+        element.addClass(normal)
+
+  # Event handlers for adjusting simulation speed
+  $("#speed-slowest-btn").click ->
+    Simulator.setSpeed(ESpeed.Slowest)
+    toggleBtn($("#speed-slowest-btn"))
+  $("#speed-slow-btn").click ->
+    Simulator.setSpeed(ESpeed.Slow)
+    toggleBtn($("#speed-slow-btn"))
+  $("#speed-normal-btn").click ->
+    Simulator.setSpeed(ESpeed.Normal)
+    toggleBtn($("#speed-normal-btn"))
+  $("#speed-fast-btn").click ->
+    Simulator.setSpeed(ESpeed.Fast)
+    toggleBtn($("#speed-fast-btn"))
+  $("#speed-fastest-btn").click ->
+    Simulator.setSpeed(ESpeed.Fastest)
+    toggleBtn($("#speed-fastest-btn"))
 
   # Pull the matrix dimensions from the page
   height = $("#matrixA-height").text()
