@@ -51,6 +51,7 @@ class StatisticsElement
   # @param value Initial value for the element
   constructor: (elementID, @value) ->
     @element = $("#" + elementID)
+    @originalValue = @value
     @updateValue(@value)
 
   # Decrements the element's value by 1
@@ -60,6 +61,10 @@ class StatisticsElement
   # Increments the element's value by 1
   increment: =>
     @updateValue(@value + 1)
+
+  # Resets the element's value to the original value
+  reset: =>
+    @updateValue(@originalValue)
 
   # Updates the element's displayed value
   updateValue: (newValue) =>
@@ -320,6 +325,12 @@ class Simulator
   # Clears all saved actions
   @clear: =>
     @data = []
+    @cacheHits.reset()
+    @cacheMisses.reset()
+    @cacheEvictions.reset()
+    @cacheUsage.reset()
+    @cacheSize.reset()
+    @cachePercentage.reset()
     @updateCacheVisualization()
 
   @initialize: =>
@@ -656,19 +667,48 @@ class CacheSet
 #
 ###############################################################################
 
+# Basic, element by element transpose function
 naive = =>
-  console.log("Running Naive algorithm")
   for m in [0...Model.matrixA.y]
     for n in [0...Model.matrixA.x]
       Model.matrixB.set(m, n, Model.matrixA.get(n, m))
   return
 
-naiveBlocked = =>
-  console.log("Naive-blocked")
+# Blocked transpose function
+# @param blockSize Size of each block, in number of ints
+naiveBlocked = (blockSize) =>
+  M = Model.matrixA.y
+  N = Model.matrixB.x
+
+  for i in [0...M] by blockSize
+    for j in [0...N] by blockSize
+      sizeM = if M - i > blockSize then blockSize else M - i
+      sizeN = if N - j > blockSize then blockSize else N - j
+      for m in [i...i + sizeM]
+        for n in [j...j + sizeN]
+          Model.matrixB.set(m, n, Model.matrixA.get(n, m))
   return
 
-deferredBlocked = =>
-  console.log("Deferred blocked")
+# Deferred write blocked transpose function
+# @param blockSize Size of each block, in number of ints
+deferredBlocked = (blockSize) =>
+  M = Model.matrixA.y
+  N = Model.matrixB.x
+
+  for i in [0...M] by blockSize
+    for j in [0...N] by blockSize
+      sizeM = if M - i > blockSize then blockSize else M - i
+      sizeN = if N - j > blockSize then blockSize else N - j
+      for m in [i...i + sizeM]
+        deferred = null
+        for n in [j...j + sizeN]
+          if (m == n)
+            deferred = Model.matrixA.get(n, m)
+          else
+            Model.matrixB.set(m, n, Model.matrixA.get(n, m))
+        if deferred?
+          console.log("Deferred write")
+          Model.matrixB.set(m, m, deferred)
   return
 
 ###############################################################################
@@ -701,19 +741,35 @@ $ =>
     Simulator.simulate()
     return
 
-  # Naive algorithm event handler
-  $("#naive-blocked-btn").click ->
+  # Naive blocked algorithm event handler (block size = 4)
+  $("#naive-blocked-4-btn").click ->
     reset()
     Simulator.clear()
-    naiveBlocked()
+    naiveBlocked(4)
     Simulator.simulate()
     return
 
-  # Naive algorithm event handler
-  $("#deferred-blocked-btn").click ->
+  # Naive blocked algorithm event handler (block size = 8)
+  $("#naive-blocked-8-btn").click ->
     reset()
     Simulator.clear()
-    deferredBlocked()
+    naiveBlocked(8)
+    Simulator.simulate()
+    return
+
+  # Deferred write algorithm event handler (block size = 4)
+  $("#deferred-blocked-4-btn").click ->
+    reset()
+    Simulator.clear()
+    deferredBlocked(4)
+    Simulator.simulate()
+    return
+
+  # Deferred write algorithm event handler (block size = 8)
+  $("#deferred-blocked-8-btn").click ->
+    reset()
+    Simulator.clear()
+    deferredBlocked(8)
     Simulator.simulate()
     return
 
