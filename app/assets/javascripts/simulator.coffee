@@ -323,6 +323,11 @@ class Simulator
   @data: []
   # Delay between updates, in milliseconds
   @delay: 50
+  # Handles for cancelling a deferred function call via setTimeout()
+  # Handle for the run() function
+  @runHandle: null
+  # Handle for the finish() function
+  @finishHandle: null
 
   # Statistics Sidebar DOM Element references
   @cacheHits: null
@@ -368,16 +373,25 @@ class Simulator
     run = (index) =>
       @data[index].run()
       @updateCacheVisualization()
-      setTimeout((() -> finish(index)), @delay)
+      @finishHandle = setTimeout((() -> finish(index)), @delay)
       return
     # Completes an action
     finish = (index) =>
       @data[index].finish()
       # If additional elements remain, call `run()` on the next element
       if index + 1 < @data.length
-        setTimeout((() -> run(index + 1)), @delay)
+        @runHandle = setTimeout((() -> run(index + 1)), @delay)
       return
-    setTimeout((() => run(0)), @delay)
+    @runHandle = setTimeout((() => run(0)), @delay)
+
+  # Stops a currently running simulation
+  @stop: =>
+    if @runHandle?
+      clearTimeout(@runHandle)
+      @runHandle = null
+    if @finishHandle?
+      clearTimeout(@finishHandle)
+      @finishHandle = null
 
   # Updates the cache usage percentage displayed on the page
   @updateCacheUsagePercentage: =>
@@ -742,6 +756,7 @@ deferredBlocked = (blockSize) =>
 ###############################################################################
 
 reset = ->
+  Simulator.stop()
   Cache.flush()
   Model.reset()
   Simulator.clear()
