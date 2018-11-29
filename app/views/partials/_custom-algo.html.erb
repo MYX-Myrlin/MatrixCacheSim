@@ -1,0 +1,34 @@
+<!--
+  _custom-algo.html.erb
+  Partial used to display the information and text box for custom algorithm
+  execution.
+-->
+
+<!-- Root Container -->
+<div class="p-2">
+  <!-- Header -->
+  <h3 class="bg-secondary text-center text-white">Custom Algorithm</h3>
+  <!-- Container for the text region and help bar -->
+  <div class="d-flex justify-content-between">
+    <!-- Text Region for the script -->
+    <div class="d-flex flex-column flex-fill justify-content-center mx-4">
+      <textarea rows="10" cols="140" style="resize:none" id="custom-func">
+// Naive matrix transpose algorithm
+for (var m = 0; m < Model.matrixA.y; ++m) {
+  for (var n = 0; n < Model.matrixA.x; ++n) {
+    Model.matrixB.set(m, n, Model.matrixA.get(n, m))
+  }
+}
+      </textarea>
+    <button class="btn btn-success mt-2 py-2 px-4" id="run-custom">Run!</button>
+    </div>
+    <!-- Help bar -->
+    <div class="d-flex flex-column border border-thick p-2">
+      <h5>Usage:</h5>
+      <p>Get MatrixA's Height (M): <code>Model.matrixA.y</code></p>
+      <p>Get MatrixB's Height (M): <code>Model.matrixB.y</code></p>
+      <p>Get a value from a matrix: <code>Model.matrixA.get(x, y)</code></p>
+      <p>Set a value in a matrix: <code>Model.matrixA.set(x, y, value)</code></p>
+    </div>
+  </div>
+</div>

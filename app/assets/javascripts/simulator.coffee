@@ -773,6 +773,15 @@ $ =>
     Simulator.simulate()
     return
 
+  # Event handler for running a user's custom algorithm
+  $("#run-custom").click ->
+    reset()
+    Simulator.clear()
+    document.body.scrollTop = document.documentElement.scrollTop = 0;
+    eval($("#custom-func").val())
+    Simulator.simulate()
+    return
+
   matrixAAddress = Memory.alloc(32 * 32)
   matrixBAddress = Memory.alloc(32 * 32)
   Model.initialize(32, 32, matrixAAddress, matrixBAddress)
