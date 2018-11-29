@@ -5,6 +5,8 @@
 <%
   # Class used for the buttons at the bottom of the page
   btn_class = "btn btn-success mx-1"
+  # Class used for dropdown buttons
+  dropdown_btn_class = "btn btn-secondary dropdown-item"
 %>
 <!DOCTYPE html>
 <html>
@@ -21,9 +23,28 @@
     <!-- Root Container -->
     <div class="d-flex flex-column h-100">
       <!-- Title Bar -->
-      <h1 class="bg-primary text-center text-white p-2">
-        <%= @height %>x<%= @width %> Matrix Simulator
-      </h1>
+      <div class="d-flex justify-content-between align-items-stretch">
+        <!-- Back Button -->
+        <%= link_to menu_index_path, class: "btn btn-secondary m-0 v-center" do %>
+          <span>< Back</span>
+        <% end %>
+        <!-- Title -->
+        <h1 class="flex-fill bg-primary text-center text-white m-0 p-2">
+          <%= @height %>x<%= @width %> Matrix Simulator
+        </h1>
+        <!-- Dropdown Menu -->
+        <div class="dropdown m-0">
+          <button class="btn btn-secondary dropdown-toggle h-100"
+            id="dropdownMenuButton" data-toggle="dropdown">
+            Matrices
+          </button>
+          <div class="dropdown-menu dropdown-menu-right">
+            <%= link_to "32x32 Matrix", simulator_thirtytwo_path, class: dropdown_btn_class %>
+            <%= link_to "64x64 Matrix", simulator_sixtyfour_path, class: dropdown_btn_class %>
+            <%= link_to "63x67 Matrix", simulator_sixtythree_path, class: dropdown_btn_class %>
+          </div>
+        </div>
+      </div>
       <!-- Matrices -->
       <div class="d-flex justify-content-around flex-fill m-4">
         <%= render partial: 'partials/matrix', locals: {
