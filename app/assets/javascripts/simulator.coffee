@@ -301,11 +301,11 @@ class Model
     @matrixB = new Matrix(matrixY, matrixX, matrixBAddress, [])
     # Load each matrix's elements
     matrixAElements = $(".matrixA-element")
-    for index in [0..matrixAElements.length]
+    for index in [0...matrixAElements.length]
       @matrixA.elements.push(matrixAElements.eq(index))
 
     matrixBElements = $(".matrixB-element")
-    for index in [0..matrixBElements.length]
+    for index in [0...matrixBElements.length]
       @matrixB.elements.push(matrixBElements.eq(index))
     return
 
