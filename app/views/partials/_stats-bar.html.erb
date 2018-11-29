@@ -3,7 +3,7 @@
   Displays a panel used for displaying cache statistics.
 -->
 <div class="d-flex flex-column align-items-stretch bg-secondary
-  text-white text-center p-2 stats-bar">
+  text-white text-center p-2 stats-bar flex-fix">
   <h1>Algorithm Statistics</h1>
   <!-- Cache Hits -->
   <div>
@@ -31,15 +31,15 @@
     <span>%)</span>
   </div>
   <!-- Cache Visualizer -->
-  <div class="d-flex flex-column align-self-center align-items-stretch w-50"
+  <div class="d-flex flex-column align-self-center align-items-stretch w-50 flex-fix"
     id="cache-visualizer">
     <% (0..31).each do |index| %>
       <!-- Cache visualizer element -->
-      <div class="d-flex justify-content-between">
+      <div class="d-flex justify-content-between flex-fix">
         <!-- Set number -->
-        <p><%= index %>:&nbsp;</p>
+        <p class="flex-fix"><%= index %>:&nbsp;</p>
         <!-- Status -->
-        <div class="border w-75 cache-line-status">
+        <div class="border w-75 cache-line-status flex-fix">
           &nbsp;
         </div>
       </div>
