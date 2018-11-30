@@ -49,18 +49,20 @@
       </div>
       <!-- Matrices -->
       <div class="d-xl-flex justify-content-around flex-fill">
-        <%= render partial: 'partials/matrix', locals: {
-          name: "Matrix A",
-          id: "matrixA",
-          height: @height,
-          width: @width
-        } %>
-        <%= render partial: 'partials/matrix', locals: {
-          name: "Matrix B",
-          id: "matrixB",
-          height: @width,
-          width: @height
-        } %>
+        <div class="d-lg-flex justify-content-center flex-fill matrix-container">
+          <%= render partial: 'partials/matrix', locals: {
+            name: "Matrix A",
+            id: "matrixA",
+            height: @height,
+            width: @width
+          } %>
+          <%= render partial: 'partials/matrix', locals: {
+            name: "Matrix B",
+            id: "matrixB",
+            height: @width,
+            width: @height
+          } %>
+        </div>
         <%= render 'partials/stats-bar' %>
       </div>
       <!-- Algorithms & Options -->

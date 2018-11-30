@@ -39,6 +39,17 @@ html, body
 .flex-fix
   min-height: 1px
 
+.matrix-container
+  height: auto
+
+@include media-breakpoint-down(lg)
+  .matrix-container
+    max-height: 55vw
+
+@include media-breakpoint-down(md)
+  .matrix-container
+    max-height: none
+
 // Class used to make the matrix elements appear square
 .matrix-element
   font-size: 8px
