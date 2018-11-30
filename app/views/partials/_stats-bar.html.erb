@@ -2,47 +2,49 @@
   _stats-bar.html.erb
   Displays a panel used for displaying cache statistics.
 -->
-<div class="d-flex flex-column align-items-stretch bg-secondary
-  text-white text-center p-2 stats-bar flex-fix">
-  <h1>Algorithm Statistics</h1>
-  <!-- Cache Hits -->
-  <div>
-    <span>Cache Hits: </span>
-    <span id="cache-hits">0</span>
-  </div>
-  <!-- Cache Misses -->
-  <div>
-    <span>Cache Misses: </span>
-    <span id="cache-misses">0</span>
-  </div>
-  <!-- Cache Evictions -->
-  <div>
-    <span>Cache Evictions: </span>
-    <span id="cache-evictions">0</span>
-  </div>
-  <!-- Cache Usage -->
-  <div>
-    <span>Cache Usage: </span>
-    <span id="cache-usage">0</span>
-    <span>/</span>
-    <span id="cache-size">0</span>
-    <span>(</span>
-    <span id="cache-percentage">0</span>
-    <span>%)</span>
-  </div>
-  <!-- Cache Visualizer -->
-  <div class="d-flex flex-column align-self-center align-items-stretch w-50 flex-fix"
-    id="cache-visualizer">
-    <% (0..31).each do |index| %>
-      <!-- Cache visualizer element -->
-      <div class="d-flex justify-content-between flex-fix">
-        <!-- Set number -->
-        <p class="flex-fix"><%= index %>:&nbsp;</p>
-        <!-- Status -->
-        <div class="border w-75 cache-line-status flex-fix">
-          &nbsp;
+<div class="col-xl-2 p-2">
+  <div class="d-flex flex-column align-items-stretch bg-secondary
+    text-white text-center p-2 flex-fix h-100">
+    <h1>Algorithm Statistics</h1>
+    <!-- Cache Hits -->
+    <div>
+      <span>Cache Hits: </span>
+      <span id="cache-hits">0</span>
+    </div>
+    <!-- Cache Misses -->
+    <div>
+      <span>Cache Misses: </span>
+      <span id="cache-misses">0</span>
+    </div>
+    <!-- Cache Evictions -->
+    <div>
+      <span>Cache Evictions: </span>
+      <span id="cache-evictions">0</span>
+    </div>
+    <!-- Cache Usage -->
+    <div>
+      <span>Cache Usage: </span>
+      <span id="cache-usage">0</span>
+      <span>/</span>
+      <span id="cache-size">0</span>
+      <span>(</span>
+      <span id="cache-percentage">0</span>
+      <span>%)</span>
+    </div>
+    <!-- Cache Visualizer -->
+    <div class="d-flex flex-wrap justify-content-around flex-fix my-2"
+      id="cache-visualizer">
+      <% (0..31).each do |index| %>
+        <!-- Cache visualizer element -->
+        <div class="d-flex col-sm-6 justify-content-between flex-fix px-1">
+          <!-- Set number -->
+          <span class="flex-fill flex-fix text-right"><%= index %>:&nbsp;&nbsp;</span>
+          <!-- Status -->
+          <div class="border col-9 cache-line-status flex-fix">
+            &nbsp;
+          </div>
         </div>
-      </div>
-    <% end %>
+      <% end %>
+    </div>
   </div>
 </div>

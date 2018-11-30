@@ -862,9 +862,9 @@ $ =>
     ]
 
     # CSS class used normally
-    normal = "btn-success"
+    normal = "btn-outline-success"
     # CSS class used when toggled
-    toggled = "btn-outline-success"
+    toggled = "btn-success"
 
     # Set each button's CSS class
     for element in buttons

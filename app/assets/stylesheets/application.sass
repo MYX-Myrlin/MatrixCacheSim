@@ -2,14 +2,23 @@ $enable-rounded: false
 
 @import "bootstrap"
 
-// Dimensions for the matrices
-.matrix
-  height: 35vw
-  width: 35vw
+html, body
+  font-size: 1rem
+  margin: 0px
+  padding: 0px
+  width: 100%
 
-// Dimensions for the statistics bar
-.stats-bar
-  height: 35vw
+@include media-breakpoint-up(sm)
+  html
+    font-size: 1.1rem
+
+@include media-breakpoint-up(md)
+  html
+    font-size: 1.2rem
+
+@include media-breakpoint-up(lg)
+  html
+    font-size: 1.4rem
 
 // Convenience class used to horizontally center elements
 .h-center
@@ -29,3 +38,8 @@ $enable-rounded: false
 // Class used to fix flexbox overflow behavior in non-Chrome browsers
 .flex-fix
   min-height: 1px
+
+// Class used to make the matrix elements appear square
+.matrix-element
+  font-size: 8px
+  height: auto
