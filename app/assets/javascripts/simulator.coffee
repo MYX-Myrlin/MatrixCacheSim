@@ -384,6 +384,7 @@ class Simulator
     cacheStatusElements = $(".cache-line-status")
     for i in [0...cacheStatusElements.length]
       @cacheVisualizerElements.push(cacheStatusElements.eq(i))
+    @clear()
 
   # Adds an action to the simulation log
   # @param action Action object to store
